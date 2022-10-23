@@ -236,3 +236,7 @@ _Pvt_Extensions
 
 # IdentityServer4 Signing Credentials
 **/tempkey.jwk
+
+# Credentials and logs
+logs/
+danger/

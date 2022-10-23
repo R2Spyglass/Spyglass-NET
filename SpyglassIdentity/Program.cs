@@ -3,6 +3,7 @@ using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace Spyglass.Identity
@@ -55,13 +56,15 @@ namespace Spyglass.Identity
                 if (!configContext.Clients.Any())
                 {
                     logger.Warning("No clients registered in the database, adding Spyglass admin client");
+
+                    var secret = Convert.ToBase64String(CryptoRandom.CreateRandomKey(32));
                     var adminClient = new Client
                     {
                         ClientId = AuthorizationConfig.SpyglassAdminClientId,
                         ClientName = "SpyglassAdmin",
                         ClientSecrets = new List<Secret>
                         {
-                            new Secret(Convert.ToBase64String(CryptoRandom.CreateRandomKey(32)).Sha256(), "Spyglass Admin Secret")
+                            new Secret(secret.Sha256(), "Spyglass Admin Secret")
                         },
                         AllowedGrantTypes = GrantTypes.ClientCredentials,
                         AllowedScopes = AuthorizationConfig.ApiResources(builder.Configuration)
@@ -71,8 +74,20 @@ namespace Spyglass.Identity
                         AccessTokenLifetime = int.MaxValue
                     };
 
+                    var clientInfo = new
+                    {
+                        ClientId = adminClient.ClientId,
+                        ClientSecret = secret,
+                    };
+                    
                     configContext.Clients.Add(adminClient.ToEntity());
                     await configContext.SaveChangesAsync();
+                    
+                    logger.Information("Created Spyglass admin client, saving credentials to danger/spyglass-credentials.json");
+                    var json = JsonConvert.SerializeObject(clientInfo, Formatting.Indented);
+                    
+                    Directory.CreateDirectory("danger");
+                    await File.WriteAllTextAsync("danger/spyglass-credentials.json", json);
                 }
                 
                 var persistedContext = scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
@@ -85,7 +100,7 @@ namespace Spyglass.Identity
                 }
             }
 
-            logger.Information("Setup is done, running identity server");
+            logger.Information("Setup is complete, running identity server");
             await app.RunAsync(AuthorizationConfig.IdentityServerUrl);
         }
     }

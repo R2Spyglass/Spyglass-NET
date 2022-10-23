@@ -2,6 +2,8 @@
 using System.Net.Mime;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using IdentityServer4.EntityFramework.DbContexts;
+using IdentityServer4.EntityFramework.Options;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -66,7 +68,19 @@ namespace Spyglass.Core
             {
                 options.UseNpgsql(Configuration.GetConnectionString("SpyglassContext"));
                 options.UseSnakeCaseNamingConvention();
-                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution);
+            });
+            
+            // Setup IdentityServer4 database contexts.
+            services.AddSingleton<ConfigurationStoreOptions>();
+            services.AddSingleton<OperationalStoreOptions>();
+            services.AddDbContext<ConfigurationDbContext>(options =>
+            {
+                options.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext"));
+            });
+            
+            services.AddDbContext<PersistedGrantDbContext>(options =>
+            {
+                options.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext"));
             });
 
             services.AddSingleton(Configuration);

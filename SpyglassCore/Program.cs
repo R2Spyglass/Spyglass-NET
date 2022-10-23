@@ -15,7 +15,7 @@ namespace Spyglass.Core
                 .CreateLogger();
 
             Log.Logger = logger;
-
+            builder.Services.AddSingleton(logger);
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(logger);
             
