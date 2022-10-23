@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpyglassCore", "SpyglassCore\SpyglassCore.csproj", "{121FFC48-CE59-4734-A273-BD719A81943B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpyglassModels", "SpyglassModels\SpyglassModels.csproj", "{7ECA310F-E493-46D6-827B-F991CAAA4F8C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpyglassIdentity", "SpyglassIdentity\SpyglassIdentity.csproj", "{8236522B-37F9-419F-A9BC-E8883C8441BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{121FFC48-CE59-4734-A273-BD719A81943B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{121FFC48-CE59-4734-A273-BD719A81943B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{121FFC48-CE59-4734-A273-BD719A81943B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{121FFC48-CE59-4734-A273-BD719A81943B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7ECA310F-E493-46D6-827B-F991CAAA4F8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7ECA310F-E493-46D6-827B-F991CAAA4F8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7ECA310F-E493-46D6-827B-F991CAAA4F8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7ECA310F-E493-46D6-827B-F991CAAA4F8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8236522B-37F9-419F-A9BC-E8883C8441BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8236522B-37F9-419F-A9BC-E8883C8441BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8236522B-37F9-419F-A9BC-E8883C8441BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8236522B-37F9-419F-A9BC-E8883C8441BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
