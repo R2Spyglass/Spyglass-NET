@@ -1,4 +1,5 @@
-﻿using IdentityModel.Client;
+﻿using System.Security.Claims;
+using IdentityModel.Client;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
@@ -21,23 +22,19 @@ namespace SpyglassNET.Controllers
         private readonly ConfigurationDbContext _identityConfig;
         private readonly IHttpClientFactory _httpFactory;
         private readonly IdentityDiscoveryService _discovery;
+        private readonly MaintainerAuthenticationService _maintainerAuth;
         private readonly PersistedGrantDbContext _persistedGrant;
         private readonly Logger _log;
 
-        public AdminController(ConfigurationDbContext identityConfig, IHttpClientFactory httpFactory, IdentityDiscoveryService discovery, Logger log, PersistedGrantDbContext persistedGrant)
+        public AdminController(ConfigurationDbContext identityConfig, IHttpClientFactory httpFactory, IdentityDiscoveryService discovery, 
+            MaintainerAuthenticationService maintainerAuth, Logger log, PersistedGrantDbContext persistedGrant)
         {
             _identityConfig = identityConfig;
             _httpFactory = httpFactory;
             _discovery = discovery;
+            _maintainerAuth = maintainerAuth;
             _log = log;
             _persistedGrant = persistedGrant;
-        }
-
-        [HttpGet]
-        [Route("auth_with_server")]
-        public IActionResult AuthWithServer()
-        {
-            return Ok("Hello, world!");
         }
 
         /// <summary>
@@ -109,6 +106,12 @@ namespace SpyglassNET.Controllers
             });
         }
 
+        /// <summary>
+        /// Deletes the client with the given client id.
+        /// You may not delete the Spyglass Admin client.
+        /// </summary>
+        /// <param name="clientId"> The id of the client to delete. </param>
+        /// <returns> An ApiResult containing 'Success', and 'Error' on failure. </returns>
         [HttpPost]
         [Route("delete_client")]
         public async Task<IActionResult> DeleteClient(string clientId)
@@ -206,9 +209,16 @@ namespace SpyglassNET.Controllers
             });
         }
 
+        /// <summary>
+        /// Requests a new reference token for the given client id, using their client secret.
+        /// This will revoke any previous grant the client may have. 
+        /// </summary>
+        /// <param name="clientId"> The client id of the client to create a new referenced token for. </param>
+        /// <param name="clientSecret"> The client secret of the client. </param>
+        /// <returns> A TokenRequestResult containing the new token on success, or an error message otherwise. </returns>
         [HttpGet]
         [Route("request_token")]
-        public async Task<IActionResult> RequestToken(string clientId, string clientSecret)
+        public async Task<ActionResult<TokenRequestResult>> RequestToken(string clientId, string clientSecret)
         {
             if (string.IsNullOrWhiteSpace(clientId))
             {
@@ -267,9 +277,14 @@ namespace SpyglassNET.Controllers
             });
         }
 
+        /// <summary>
+        /// Revokes the access token of the given client id.
+        /// </summary>
+        /// <param name="clientId">The id of the client to revoke the access token for. </param>
+        /// <returns> An ApiResult containing whether or not the action was a success. </returns>
         [HttpGet]
         [Route("revoke_token")]
-        public async Task<IActionResult> RevokeTokens(string clientId)
+        public async Task<ActionResult<ApiResult>> RevokeToken(string clientId)
         {
             if (string.IsNullOrWhiteSpace(clientId))
             {
@@ -295,6 +310,32 @@ namespace SpyglassNET.Controllers
                 Success = false,
                 Error = $"Client '{clientId}' has no access token to revoke."
             });
+        }
+
+        /// <summary>
+        /// Adds a maintainer identity to the database.
+        /// Used for maintainers to authenticate themselves on Northstar servers.
+        /// </summary>
+        /// <param name="clientId"> The client id of the maintainer to assign the unique id to. </param>
+        /// <param name="uniqueId"> The unique id of the maintainer to add. </param>
+        /// <returns> Whether or not adding an identity was a success. </returns>
+        [HttpGet]
+        [Route("add_maintainer_identity")]
+        public async Task<ApiResult> AddMaintainerIdentityAsync(string clientId, string uniqueId)
+        {
+            return await _maintainerAuth.AddIdentityAsync(clientId, uniqueId);
+        }
+        
+        /// <summary>
+        /// Removes a maintainer identity from the database.
+        /// </summary>
+        /// <param name="uniqueId"> The unique id of the identity to remove. </param>
+        /// <returns> Whether or not removing the identity was a success. </returns>
+        [HttpGet]
+        [Route("remove_maintainer_identity")]
+        public async Task<ApiResult> RemoveMaintainerIdentityAsync(string uniqueId)
+        {
+            return await _maintainerAuth.RemoveIdentityAsync(uniqueId);
         }
     }
 }

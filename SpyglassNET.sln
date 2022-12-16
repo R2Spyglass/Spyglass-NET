@@ -1,10 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpyglassCore", "SpyglassCore\SpyglassCore.csproj", "{121FFC48-CE59-4734-A273-BD719A81943B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spyglass.Core", "Spyglass.Core\Spyglass.Core.csproj", "{121FFC48-CE59-4734-A273-BD719A81943B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpyglassModels", "SpyglassModels\SpyglassModels.csproj", "{7ECA310F-E493-46D6-827B-F991CAAA4F8C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spyglass.Models", "Spyglass.Models\Spyglass.Models.csproj", "{7ECA310F-E493-46D6-827B-F991CAAA4F8C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpyglassIdentity", "SpyglassIdentity\SpyglassIdentity.csproj", "{8236522B-37F9-419F-A9BC-E8883C8441BC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spyglass.Identity", "Spyglass.Identity\Spyglass.Identity.csproj", "{8236522B-37F9-419F-A9BC-E8883C8441BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

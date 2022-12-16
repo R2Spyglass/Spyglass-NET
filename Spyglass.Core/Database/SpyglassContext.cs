@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Spyglass.Models;
+using Spyglass.Models.Admin;
 
 namespace Spyglass.Core.Database
 {
@@ -25,6 +26,11 @@ namespace Spyglass.Core.Database
         /// </summary>
         public DbSet<PlayerSanction> Sanctions { get; set; } = null!;
 
+        /// <summary>
+        /// Table containing all of the maintainer's linked Titanfall 2 accounts.
+        /// </summary>
+        public DbSet<MaintainerIdentity> MaintainerIdentities { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasSequence<int>("PlayerSanctionIds")
@@ -34,14 +40,26 @@ namespace Spyglass.Core.Database
             modelBuilder.Entity<PlayerInfo>(e =>
             {
                 e.HasKey(p => p.UniqueID);
+                
                 e.Property(p => p.CreatedAt)
                     .HasDefaultValueSql("now()");
+                
+                e.Property(p => p.LastSeenAt)
+                    .HasDefaultValueSql("now()");
+                
+                e.Property(p => p.IsMaintainer)
+                    .HasDefaultValue(false);
+                
                 e.Ignore(p => p.KnownAliases);
+                e.Ignore(s => s.CreatedAtTimestamp);
+                e.Ignore(s => s.CreatedAtReadable);
+                e.Ignore(s => s.LastSeenAtTimestamp);
+                e.Ignore(s => s.LastSeenAtReadable);
             });
 
             modelBuilder.Entity<PlayerAlias>(e =>
             {
-                e.HasKey(a => new {a.UniqueID, a.Alias});
+                e.HasKey(a => new { a.UniqueID, a.Alias });
                 e.HasOne(a => a.OwningPlayer)
                     .WithMany(p => p.Aliases)
                     .HasForeignKey(a => a.UniqueID);
@@ -59,11 +77,20 @@ namespace Spyglass.Core.Database
                 e.HasOne(s => s.OwningPlayer)
                     .WithMany(p => p.Sanctions)
                     .HasForeignKey(s => s.UniqueId);
-                
+
+                e.HasOne(s => s.IssuerInfo)
+                    .WithMany()
+                    .HasForeignKey(s => s.IssuerId);
+
                 e.Ignore(s => s.IssuedAtTimestamp);
                 e.Ignore(s => s.IssuedAtReadable);
                 e.Ignore(s => s.ExpiresAtTimestamp);
                 e.Ignore(s => s.ExpiresAtReadable);
+            });
+
+            modelBuilder.Entity<MaintainerIdentity>(e =>
+            {
+                e.HasKey(i => i.UniqueId);
             });
         }
     }

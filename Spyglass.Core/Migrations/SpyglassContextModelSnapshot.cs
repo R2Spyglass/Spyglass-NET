@@ -2,7 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Spyglass.Core.Database;
@@ -12,10 +11,9 @@ using Spyglass.Core.Database;
 namespace Spyglass.Core.Migrations
 {
     [DbContext(typeof(SpyglassContext))]
-    [Migration("20221017204416_Initial")]
-    partial class Initial
+    partial class SpyglassContextModelSnapshot : ModelSnapshot
     {
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -25,6 +23,23 @@ namespace Spyglass.Core.Migrations
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.HasSequence<int>("PlayerSanctionIds");
+
+            modelBuilder.Entity("Spyglass.Models.Admin.MaintainerIdentity", b =>
+                {
+                    b.Property<string>("UniqueId")
+                        .HasColumnType("text")
+                        .HasColumnName("unique_id");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("client_id");
+
+                    b.HasKey("UniqueId")
+                        .HasName("pk_maintainer_identities");
+
+                    b.ToTable("maintainer_identities", (string)null);
+                });
 
             modelBuilder.Entity("Spyglass.Models.PlayerAlias", b =>
                 {
@@ -55,8 +70,20 @@ namespace Spyglass.Core.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<bool>("IsMaintainer")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_maintainer");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("LastSeenOnServer")
+                        .HasColumnType("text")
+                        .HasColumnName("last_seen_on_server");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -87,8 +114,9 @@ namespace Spyglass.Core.Migrations
                         .HasColumnName("issued_at")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<decimal>("IssuerId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<string>("IssuerId")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("issuer_id");
 
                     b.Property<int>("PunishmentType")
@@ -99,11 +127,6 @@ namespace Spyglass.Core.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("reason");
-
-                    b.Property<string>("ReportMessage")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("report_message");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer")
@@ -116,6 +139,9 @@ namespace Spyglass.Core.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_sanctions");
+
+                    b.HasIndex("IssuerId")
+                        .HasDatabaseName("ix_sanctions_issuer_id");
 
                     b.HasIndex("UniqueId")
                         .HasDatabaseName("ix_sanctions_unique_id");
@@ -137,12 +163,21 @@ namespace Spyglass.Core.Migrations
 
             modelBuilder.Entity("Spyglass.Models.PlayerSanction", b =>
                 {
+                    b.HasOne("Spyglass.Models.PlayerInfo", "IssuerInfo")
+                        .WithMany()
+                        .HasForeignKey("IssuerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sanctions_players_issuer_info_unique_id");
+
                     b.HasOne("Spyglass.Models.PlayerInfo", "OwningPlayer")
                         .WithMany("Sanctions")
                         .HasForeignKey("UniqueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_sanctions_players_owning_player_temp_id1");
+                        .HasConstraintName("fk_sanctions_players_owning_player_unique_id");
+
+                    b.Navigation("IssuerInfo");
 
                     b.Navigation("OwningPlayer");
                 });

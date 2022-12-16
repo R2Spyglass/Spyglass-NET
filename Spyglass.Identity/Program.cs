@@ -43,7 +43,7 @@ namespace Spyglass.Identity
                 if (!configContext.ApiScopes.Any())
                 {
                     logger.Information("Adding API scopes to the database");
-                    configContext.ApiScopes.AddRange(AuthorizationConfig.ApiScopes.Select(s => s.ToEntity()));
+                    configContext.ApiScopes.AddRange(AuthorizationConfig.Scopes.Select(s => s.ToEntity()));
                 }
                 
                 if (!configContext.ApiResources.Any())

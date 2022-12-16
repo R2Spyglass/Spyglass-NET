@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Spyglass.Core.Database;
 
 namespace Spyglass.Core
 {
@@ -25,6 +27,19 @@ namespace Spyglass.Core
             // Configure the web application itself before running it.
             var app = builder.Build();
             startup.Configure(app);
+            
+            // Migrate the database if required.
+            using (var scope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope())
+            {
+                using (var dbContext = scope.ServiceProvider.GetRequiredService<SpyglassContext>())
+                {
+                    var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+                    if (pendingMigrations.Any())
+                    {
+                        await dbContext.Database.MigrateAsync();
+                    }
+                }
+            }
             
             await app.RunAsync();
         }

@@ -37,7 +37,7 @@ namespace Spyglass.Core
 
             services.AddAuthorization(options =>
             {
-                var scopes = AuthorizationConfig.ApiScopes
+                var scopes = AuthorizationConfig.Scopes
                     .Select(s => s.Name)
                     .Where(s => !string.IsNullOrWhiteSpace(s));
                 
@@ -49,6 +49,13 @@ namespace Spyglass.Core
                         policy.RequireClaim("scope", scope!);
                     });
                 }
+                
+                // Policy that requires either a trusted server or the players scope.
+                options.AddPolicy("PlayersWriteAccess", policy =>
+                {
+                    policy.RequireAuthenticatedUser();
+                    policy.RequireClaim("scope", new[] { ApiScopes.TrustedServer, ApiScopes.Players });
+                });
             });
 
             // Setup API endpoint controllers.
@@ -58,6 +65,10 @@ namespace Spyglass.Core
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                     options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                     options.SerializerSettings.DateParseHandling = DateParseHandling.DateTimeOffset;
+                    options.SerializerSettings.ContractResolver = new DefaultContractResolver
+                    {
+                        NamingStrategy = new CamelCaseNamingStrategy()
+                    };
                 });
             
             services.AddEndpointsApiExplorer();
@@ -85,6 +96,7 @@ namespace Spyglass.Core
 
             services.AddSingleton(Configuration);
             services.AddSingleton<IdentityDiscoveryService>();
+            services.AddSingleton<MaintainerAuthenticationService>();
         }
 
         public void Configure(WebApplication app)
