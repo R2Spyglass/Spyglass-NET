@@ -8,6 +8,7 @@ namespace Spyglass.Identity
     public static class ApiScopes
     {
         public static readonly string Admin = "admin";
+        public static readonly string Maintainer = "maintainer";
         public static readonly string TrustedServer = "trusted_server";
         public static readonly string Players = "players";
         public static readonly string Sanctions = "sanctions";
@@ -18,6 +19,7 @@ namespace Spyglass.Identity
         public static IEnumerable<ApiScope> Scopes => new List<ApiScope>
         {
             new ApiScope(ApiScopes.Admin, "Administration Scope"),
+            new ApiScope(ApiScopes.Maintainer, "Maintainer Scope"),
             new ApiScope(ApiScopes.TrustedServer, "Trusted Server Scope"),
             new ApiScope(ApiScopes.Players, "Players Scope"),
             new ApiScope(ApiScopes.Sanctions, "Sanctions Scope")

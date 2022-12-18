@@ -49,13 +49,6 @@ namespace Spyglass.Core
                         policy.RequireClaim("scope", scope!);
                     });
                 }
-                
-                // Policy that requires either a trusted server or the players scope.
-                options.AddPolicy("PlayersWriteAccess", policy =>
-                {
-                    policy.RequireAuthenticatedUser();
-                    policy.RequireClaim("scope", new[] { ApiScopes.TrustedServer, ApiScopes.Players });
-                });
             });
 
             // Setup API endpoint controllers.

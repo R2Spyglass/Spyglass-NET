@@ -20,7 +20,7 @@ namespace SpyglassNET.Controllers
         }
         
         [HttpGet]
-        [Authorize("admin")]
+        [Authorize("maintainer")]
         [Route("request")]
         public ActionResult<MaintainerAuthenticationResult> RequestMaintainerTicket(string uniqueId)
         {

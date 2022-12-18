@@ -127,7 +127,7 @@ namespace SpyglassNET.Controllers
         /// </summary>
         /// <returns> Whether or not tracking was a success. </returns>
         [HttpPost("track_players")]
-        [Authorize("PlayersWriteAccess")]
+        [Authorize("trusted_server")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<ApiResult> TrackPlayers(PlayerTrackingData trackingData)
         {
@@ -179,7 +179,7 @@ namespace SpyglassNET.Controllers
 
             foreach (var trackedPlayer in knownPlayers)
             {
-                trackedPlayer.LastSeenAt = DateTimeOffset.Now;
+                trackedPlayer.LastSeenAt = DateTimeOffset.UtcNow;
                 trackedPlayer.LastSeenOnServer = trackingData.Hostname;
 
                 foreach (var newPlayer in sanitizedPlayers)
@@ -196,7 +196,7 @@ namespace SpyglassNET.Controllers
             
             // Add the new players that need to be tracked.
             var newPlayers = sanitizedPlayers
-                .Where(s => knownPlayers.All(k => k.UniqueID == s.UniqueID))
+                .Where(s => knownPlayers.All(k => k.UniqueID != s.UniqueID))
                 .Select(s => new PlayerInfo { UniqueID = s.UniqueID, Username = s.Username, LastSeenOnServer = trackingData.Hostname });
 
             _context.Players.AddRange(newPlayers);

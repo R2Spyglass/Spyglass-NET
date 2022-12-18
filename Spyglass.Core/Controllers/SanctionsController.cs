@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Spyglass.Core.Database;
 using Spyglass.Identity;
 using Spyglass.Models;
@@ -139,22 +140,87 @@ namespace SpyglassNET.Controllers
             return Ok(searchResult);
         }
 
+        /// <summary>
+        /// Adds a new sanction to the database.
+        /// </summary>
+        /// <param name="data"> The sanction data to build the sanction from. </param>
+        /// <returns> The sanction that was added on success, or an error message. </returns>
         [HttpPost("add_sanction")]
         [Authorize("sanctions")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult IssueSanctionToPlayer()
+        public ActionResult<SanctionIssueResult> IssueSanctionToPlayer(SanctionIssueData data)
         {
-            // if (!data.IsValid(out var errorMessage))
-            // {
-            //     return Ok(ApiResult.FromError($"Could not issue sanction to player due to invalid data: {errorMessage}"));
-            // }
-
-            if (User.HasClaim(c => c.Type == "client_id"))
+            if (!data.IsValid(out var errorMessage))
             {
-                return Ok(User.FindFirstValue("client_id"));
+                return Ok(new SanctionIssueResult
+                {
+                    Success = false,
+                    Error = $"Could not issue sanction to player due to invalid data: {errorMessage}"
+                });
             }
-            
-            return Ok("No client_id claim!!");
+
+            var expiry = data.ExpiresAt;
+            if (data.ExpiresIn != null)
+            {
+                expiry = DateTimeOffset.UtcNow + TimeSpan.FromMinutes((double)data.ExpiresIn);
+            }
+
+            var target = _context.Players
+                .AsNoTracking()
+                .FirstOrDefault(p => p.UniqueID == data.UniqueId);
+
+            if (target == null)
+            {
+                if (!string.IsNullOrWhiteSpace(data.Username))
+                {
+                    var newPlayer = new PlayerInfo
+                    {
+                        Username = data.Username,
+                        UniqueID = data.UniqueId
+                    };
+
+                    _context.Players.Add(newPlayer);
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    return Ok(new SanctionIssueResult
+                    {
+                        Success = false,
+                        Error = $"Cannot add sanction to unknown player '{data.UniqueId}', please provide a username."
+                    });
+                }
+            }
+
+            var sanction = new PlayerSanction
+            {
+                UniqueId = data.UniqueId,
+                IssuerId = data.IssuerId,
+                ExpiresAt = expiry,
+                Reason = data.Reason,
+                Type = data.Type,
+                PunishmentType = data.PunishmentType
+            };
+
+            try
+            {
+                _context.Sanctions.Add(sanction);
+                _context.SaveChanges();
+
+                return Ok(new SanctionIssueResult
+                {
+                    Success = true,
+                    IssuedSanction = sanction
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new SanctionIssueResult
+                {
+                    Success = false,
+                    Error = $"Failed to add sanction to player: {ex.Message}."
+                });
+            }
         }
     }
 }
