@@ -240,3 +240,5 @@ _Pvt_Extensions
 # Credentials and logs
 logs/
 danger/
+appsettings.json
+**/appsettings.json
