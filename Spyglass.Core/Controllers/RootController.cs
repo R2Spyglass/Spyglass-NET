@@ -27,7 +27,6 @@ namespace SpyglassNET.Controllers
         /// <summary>
         /// Returns data about the API's current version, and the minimum client version required to interact with it. 
         /// </summary>
-        // TODO: Update models submodule, use ApiVersion
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Route("version")]

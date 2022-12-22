@@ -176,6 +176,7 @@ namespace SpyglassNET.Controllers
             var currentGrants = _persistedGrant.PersistedGrants.Where(g => g.ClientId == clientId).ToList();
 
             _log.Information("Requesting a new token for client {ClientId}", clientId);
+            _log.Information("Discovery: {Endpoint}", discovery.TokenEndpoint);
             var token = await client.RequestTokenAsync(new TokenRequest
             {
                 Address = discovery.TokenEndpoint,

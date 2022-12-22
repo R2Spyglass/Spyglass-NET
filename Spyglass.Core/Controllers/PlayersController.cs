@@ -108,14 +108,12 @@ namespace SpyglassNET.Controllers
                 .Include(p => p.Aliases)
                 .Where(p =>
                     p.Username.ToLower().Contains(matchUsername)
-                    || p.Aliases.Any(a => a.Alias.ToLower().Contains(matchUsername)))
+                    || p.Aliases!.Any(a => a.Alias.ToLower().Contains(matchUsername)))
                 .ToList();
-
-            var success = matches.Count != 0;
+            
             return Ok(new PlayerSearchResult
             {
-                Success = success,
-                Error = success ? null : $"Could not find any player that matches username '{username}'.",
+                Success = true,
                 Username = username,
                 Matches = matches
             });
@@ -262,6 +260,7 @@ namespace SpyglassNET.Controllers
             }
 
             player.IsMaintainer = isMaintainer;
+            _context.Players.Update(player);
             _context.SaveChanges();
             return Ok(ApiResult.FromSuccess());
         }

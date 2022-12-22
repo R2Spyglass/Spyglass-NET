@@ -20,9 +20,10 @@ namespace Spyglass.Core
             builder.Services.AddSingleton(logger);
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(logger);
-            
+            builder.Host.UseSystemd();
+
             // Configure Dependency Injection services.
-            startup.ConfigureServices(builder.Services);
+            startup.ConfigureServices(builder.Environment, builder.Services);
             
             // Configure the web application itself before running it.
             var app = builder.Build();

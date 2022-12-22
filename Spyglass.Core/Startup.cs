@@ -2,6 +2,8 @@
 using System.Net.Mime;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using IdentityModel.AspNetCore.OAuth2Introspection;
+using IdentityModel.Client;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Options;
 using Microsoft.EntityFrameworkCore;
@@ -23,16 +25,22 @@ namespace Spyglass.Core
             Configuration = configuration;
         }
 
-        public void ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IWebHostEnvironment environment, IServiceCollection services)
         {
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
 
             services.AddAuthentication("token")
                 .AddOAuth2Introspection("token", options =>
                 {
-                    options.Authority = AuthorizationConfig.IdentityServerUrl;
+                    options.Authority = Configuration["IntrospectionAuthority"];
                     options.ClientId = "privileged";
                     options.ClientSecret = Configuration["IntrospectionApiSecret"];
+                    options.DiscoveryPolicy = new DiscoveryPolicy
+                    {
+                        RequireKeySet = false,
+                        RequireHttps = false,
+                        AllowHttpOnLoopback = true,
+                    };
                 });
 
             services.AddAuthorization(options =>
@@ -70,7 +78,7 @@ namespace Spyglass.Core
             // Setup Spyglass' efcore database context.
             services.AddDbContext<SpyglassContext>(options =>
             {
-                options.UseNpgsql(Configuration.GetConnectionString("SpyglassContext"));
+                options.UseNpgsql(Configuration.GetConnectionString("SpyglassContext")!);
                 options.UseSnakeCaseNamingConvention();
             });
             
@@ -79,17 +87,22 @@ namespace Spyglass.Core
             services.AddSingleton<OperationalStoreOptions>();
             services.AddDbContext<ConfigurationDbContext>(options =>
             {
-                options.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext"));
+                options.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext")!);
             });
             
             services.AddDbContext<PersistedGrantDbContext>(options =>
             {
-                options.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext"));
+                options.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext")!);
             });
 
             services.AddSingleton(Configuration);
             services.AddSingleton<IdentityDiscoveryService>();
             services.AddSingleton<MaintainerAuthenticationService>();
+
+            // if (environment.IsProduction())
+            // {
+            //     services.AddLettuceEncrypt();
+            // }
         }
 
         public void Configure(WebApplication app)
@@ -126,13 +139,11 @@ namespace Spyglass.Core
                     });
                 });
             }
-            // Redirect HTTP requests to HTTPS.
-            app.UseHttpsRedirection();
             
             // Authenticate and authorize using IdentityServer4.
             app.UseAuthentication();
             app.UseAuthorization();
-            
+
             // Map controllers to their endpoints, and add a fallback for a not found page (or any other non-handled requests).
             app.MapControllers();
             app.UseStatusCodePages(async context =>

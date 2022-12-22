@@ -24,6 +24,7 @@ namespace Spyglass.Identity
 
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(logger);
+            builder.Host.UseSystemd();
 
             startup.ConfigureServices(builder, builder.Services);
             var app = builder.Build();
@@ -101,7 +102,7 @@ namespace Spyglass.Identity
             }
 
             logger.Information("Setup is complete, running identity server");
-            await app.RunAsync(AuthorizationConfig.IdentityServerUrl);
+            await app.RunAsync();
         }
     }
 }

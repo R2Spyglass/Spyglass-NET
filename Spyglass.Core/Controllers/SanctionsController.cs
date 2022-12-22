@@ -78,7 +78,7 @@ namespace SpyglassNET.Controllers
                 sanctions = _context.Sanctions
                     .AsNoTracking()
                     .Where(s => sanitized.Contains(s.UniqueId) && (withExpired || s.ExpiresAt == null || s.ExpiresAt > DateTimeOffset.UtcNow))
-                    .Where(s => !excludeMaintainers || !s.OwningPlayer.IsMaintainer)
+                    .Where(s => !excludeMaintainers || !s.OwningPlayer!.IsMaintainer)
                     .Include(s => s.IssuerInfo)
                     .AsEnumerable()
                     .GroupBy(s => s.UniqueId)
@@ -89,7 +89,7 @@ namespace SpyglassNET.Controllers
                 sanctions = _context.Sanctions
                     .AsNoTracking()
                     .Where(s => sanitized.Contains(s.UniqueId) && (withExpired || s.ExpiresAt == null || s.ExpiresAt > DateTimeOffset.UtcNow))
-                    .Where(s => !excludeMaintainers || !s.OwningPlayer.IsMaintainer)
+                    .Where(s => !excludeMaintainers || !s.OwningPlayer!.IsMaintainer)
                     .AsEnumerable()
                     .GroupBy(s => s.UniqueId)
                     .ToDictionary(s => s.Key, s => s.ToList());
@@ -122,22 +122,31 @@ namespace SpyglassNET.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<SanctionSearchResult> GetSanctionById(int id)
         {
-            var sanction = _context.Sanctions
-                .Where(s => s.Id == id)
-                .Include(s => s.OwningPlayer)
-                .Include(s => s.IssuerInfo)
-                .FirstOrDefault();
-
-            var success = sanction != null;
-            var searchResult = new SanctionSearchResult
+            try
             {
-                Success = success,
-                Error = !success ? $"Could not find a sanction with id #{id}." : null,
-                Matches = success ? new Dictionary<string, List<PlayerSanction>> {{ sanction!.UniqueId, new List<PlayerSanction> { sanction }}} : null,
-                Id = id
-            };
+                var sanction = _context.Sanctions
+                    .Where(s => s.Id == id)
+                    .Include(s => s.OwningPlayer)
+                    .Include(s => s.IssuerInfo)
+                    .FirstOrDefault();
 
-            return Ok(searchResult);
+                var searchResult = new SanctionSearchResult
+                {
+                    Success = true,
+                    Matches = sanction != null ? new Dictionary<string, List<PlayerSanction>> {{sanction!.UniqueId, new List<PlayerSanction> {sanction}}} : null,
+                    Id = id
+                };
+
+                return Ok(searchResult);
+            }
+            catch (Exception ex)
+            {
+                return Ok(new SanctionSearchResult
+                {
+                    Success = false,
+                    Error = $"Failed to get sanction by id '{id}' with error: {ex.Message}"
+                });
+            }
         }
 
         /// <summary>
@@ -176,7 +185,7 @@ namespace SpyglassNET.Controllers
                     var newPlayer = new PlayerInfo
                     {
                         Username = data.Username,
-                        UniqueID = data.UniqueId
+                        UniqueID = data.UniqueId!
                     };
 
                     _context.Players.Add(newPlayer);
@@ -194,12 +203,12 @@ namespace SpyglassNET.Controllers
 
             var sanction = new PlayerSanction
             {
-                UniqueId = data.UniqueId,
-                IssuerId = data.IssuerId,
+                UniqueId = data.UniqueId!,
+                IssuerId = data.IssuerId!,
                 ExpiresAt = expiry,
-                Reason = data.Reason,
-                Type = data.Type,
-                PunishmentType = data.PunishmentType
+                Reason = data.Reason!,
+                Type = data.Type!.Value,
+                PunishmentType = data.PunishmentType!.Value
             };
 
             try
@@ -207,10 +216,16 @@ namespace SpyglassNET.Controllers
                 _context.Sanctions.Add(sanction);
                 _context.SaveChanges();
 
+                var addedSanction = _context.Sanctions
+                    .AsNoTracking()
+                    .Include(s => s.OwningPlayer)
+                    .Include(s => s.IssuerInfo)
+                    .FirstOrDefault(s => s.Id == sanction.Id);
+                
                 return Ok(new SanctionIssueResult
                 {
                     Success = true,
-                    IssuedSanction = sanction
+                    IssuedSanction = addedSanction
                 });
             }
             catch (Exception ex)
@@ -220,6 +235,113 @@ namespace SpyglassNET.Controllers
                     Success = false,
                     Error = $"Failed to add sanction to player: {ex.Message}."
                 });
+            }
+        }
+
+        /// <summary>
+        /// Updates an existing sanction in the database.
+        /// </summary>
+        /// <param name="data"> The sanction data to update the sanction from. </param>
+        /// <returns> The sanction that was updated on success, or an error message. </returns>
+        [HttpPost("update_sanction")]
+        [Authorize("sanctions")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<SanctionIssueResult> UpdateSanction(SanctionIssueData data)
+        {
+            if (data.Id == null || data.Id < 0)
+            {
+                return Ok(new SanctionIssueResult
+                {
+                    Success = false,
+                    Error = "Cannot update sanction with null or invalid id."
+                });
+            }
+
+            var sanction = _context.Sanctions.FirstOrDefault(s => s.Id == data.Id);
+            if (sanction == null)
+            {
+                return Ok(new SanctionIssueResult
+                {
+                    Success = false,
+                    Error = $"Cannot update sanction with unknown id '{data.Id}'."
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(data.UniqueId) && SpyglassUtils.ValidateUniqueId(data.UniqueId))
+            {
+                sanction.UniqueId = data.UniqueId;
+            }
+            
+            if (!string.IsNullOrWhiteSpace(data.IssuerId) && SpyglassUtils.ValidateUniqueId(data.IssuerId))
+            {
+                sanction.IssuerId = data.IssuerId;
+            }
+            
+            sanction.ExpiresAt = data.ExpiresAt ?? sanction.ExpiresAt;
+            if (data.ExpiresIn != null)
+            {
+                sanction.ExpiresAt = DateTimeOffset.UtcNow + TimeSpan.FromMinutes((double)data.ExpiresIn);
+            }
+
+            if (!string.IsNullOrWhiteSpace(data.Reason))
+            {
+                sanction.Reason = data.Reason;
+            }
+
+            sanction.Type = data.Type ?? sanction.Type;
+            sanction.PunishmentType = data.PunishmentType ?? sanction.PunishmentType;
+
+            try
+            {
+                _context.Sanctions.Update(sanction);
+                _context.SaveChanges();
+
+                var updatedSanction = _context.Sanctions
+                    .Include(s => s.OwningPlayer)
+                    .Include(s => s.IssuerInfo)
+                    .FirstOrDefault(s => s.Id == sanction.Id);
+                
+                return Ok(new SanctionIssueResult
+                {
+                    Success = true,
+                    IssuedSanction = updatedSanction
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new SanctionIssueResult
+                {
+                    Success = false,
+                    Error = $"Failed to update sanction #{data.Id}: {ex.Message}."
+                });
+            }
+        }
+
+        /// <summary>
+        /// Removes a sanction from the database.
+        /// </summary>
+        /// <param name="id"> The id of the sanction to remove. </param>
+        /// <returns> Whether or not removing the sanction was successful. </returns>
+        [HttpPost("delete_sanction")]
+        [Authorize("sanctions")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<ApiResult> DeleteSanction(int id)
+        {
+            var sanction = _context.Sanctions.FirstOrDefault(s => s.Id == id);
+            if (sanction == null)
+            {
+                return Ok(ApiResult.FromError($"Could not find any sanction with id '{id}'."));
+            }
+
+            try
+            {
+                _context.Sanctions.Remove(sanction);
+                _context.SaveChanges();
+                return Ok(ApiResult.FromSuccess());
+            }
+            catch (Exception ex)
+            {
+                return Ok(ApiResult.FromError($"Failed to delete sanction with error: {ex.Message}"));
             }
         }
     }

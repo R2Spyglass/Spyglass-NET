@@ -28,18 +28,14 @@ namespace Spyglass.Identity
                 })
                 .AddOperationalStore(options =>
                 {
-                    options.ConfigureDbContext = db => db.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext"),
+                    options.ConfigureDbContext = db => db.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext")!,
                         pg =>
                         {
                             pg.MigrationsAssembly(migrationsAssembly);
                         });
                 });
 
-            if (builder.Environment.IsDevelopment())
-            {
-                identity.AddDeveloperSigningCredential();
-            }
-
+            identity.AddDeveloperSigningCredential(false);
             services.AddSingleton(Configuration);
         }
 
@@ -49,7 +45,7 @@ namespace Spyglass.Identity
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            
             app.UseIdentityServer();
         }
     }

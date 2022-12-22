@@ -37,11 +37,6 @@ namespace Spyglass.Identity
         };
 
         /// <summary>
-        /// The url to start the identity server on.
-        /// </summary>
-        public static readonly string IdentityServerUrl = "https://localhost:5001";
-        
-        /// <summary>
         /// The client id used for Spyglass administration.
         /// </summary>
         public static readonly string SpyglassAdminClientId = "spyglass-admin";
