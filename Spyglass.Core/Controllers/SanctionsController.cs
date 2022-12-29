@@ -79,6 +79,7 @@ namespace SpyglassNET.Controllers
                     .AsNoTracking()
                     .Where(s => sanitized.Contains(s.UniqueId) && (withExpired || s.ExpiresAt == null || s.ExpiresAt > DateTimeOffset.UtcNow))
                     .Where(s => !excludeMaintainers || !s.OwningPlayer!.IsMaintainer)
+                    .Include(s => s.OwningPlayer)
                     .Include(s => s.IssuerInfo)
                     .AsEnumerable()
                     .GroupBy(s => s.UniqueId)

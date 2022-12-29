@@ -1,25 +1,27 @@
 ﻿using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using Serilog.Core;
 using Spyglass.Core.Database;
 using Spyglass.Models;
 using Spyglass.Models.Admin;
 using SpyglassNET.Utilities;
+using ILogger = Serilog.ILogger;
 
 namespace Spyglass.Core.Services
 {
     public class MaintainerAuthenticationService
     {
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly Logger _log;
+        private readonly ILogger _log;
         
         // Current authentication tickets, mapped to a uid.
         private Dictionary<string, MaintainerAuthenticationTicket> _tickets = new();
     
-        public MaintainerAuthenticationService(IServiceScopeFactory scopeFactory, Logger log)
+        public MaintainerAuthenticationService(IServiceScopeFactory scopeFactory)
         {
             _scopeFactory = scopeFactory;
-            _log = log;
+            _log = Log.Logger;
         }
 
         /// <summary>

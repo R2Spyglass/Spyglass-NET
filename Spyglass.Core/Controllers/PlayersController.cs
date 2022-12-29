@@ -108,14 +108,24 @@ namespace SpyglassNET.Controllers
                 .Include(p => p.Aliases)
                 .Where(p =>
                     p.Username.ToLower().Contains(matchUsername)
-                    || p.Aliases!.Any(a => a.Alias.ToLower().Contains(matchUsername)))
-                .ToList();
+                    || p.Aliases!.Any(a => a.Alias.ToLower().Contains(matchUsername)));
+
+            var count = matches.Count();
+            if (count > 10)
+            {
+                return Ok(new PlayerSearchResult
+                {
+                    Success = false,
+                    Username = username,
+                    Error = "Too many matches, please narrow down your query."
+                });
+            }
             
             return Ok(new PlayerSearchResult
             {
                 Success = true,
                 Username = username,
-                Matches = matches
+                Matches = matches.ToList()
             });
         }
 

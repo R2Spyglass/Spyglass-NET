@@ -12,14 +12,11 @@ namespace Spyglass.Core
             var startup = new Startup(builder.Configuration);
             
             // Setup logging to use Serilog.
-            var logger = new LoggerConfiguration()
+            Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(builder.Configuration)
                 .CreateLogger();
 
-            Log.Logger = logger;
-            builder.Services.AddSingleton(logger);
-            builder.Logging.ClearProviders();
-            builder.Logging.AddSerilog(logger);
+            builder.Host.UseSerilog();
             builder.Host.UseSystemd();
 
             // Configure Dependency Injection services.

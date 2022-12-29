@@ -5,11 +5,13 @@ using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using Serilog.Core;
 using Spyglass.Core.Services;
 using Spyglass.Identity;
 using Spyglass.Models;
 using Spyglass.Models.Admin;
+using ILogger = Serilog.ILogger;
 
 namespace SpyglassNET.Controllers
 {
@@ -24,16 +26,16 @@ namespace SpyglassNET.Controllers
         private readonly IdentityDiscoveryService _discovery;
         private readonly MaintainerAuthenticationService _maintainerAuth;
         private readonly PersistedGrantDbContext _persistedGrant;
-        private readonly Logger _log;
+        private readonly ILogger _log;
 
         public AdminController(ConfigurationDbContext identityConfig, IHttpClientFactory httpFactory, IdentityDiscoveryService discovery, 
-            MaintainerAuthenticationService maintainerAuth, Logger log, PersistedGrantDbContext persistedGrant)
+            MaintainerAuthenticationService maintainerAuth, PersistedGrantDbContext persistedGrant)
         {
             _identityConfig = identityConfig;
             _httpFactory = httpFactory;
             _discovery = discovery;
             _maintainerAuth = maintainerAuth;
-            _log = log;
+            _log = Log.Logger;
             _persistedGrant = persistedGrant;
         }
 

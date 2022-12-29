@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Spyglass.Core.Database;
 using Spyglass.Models;
 
@@ -48,18 +49,14 @@ namespace SpyglassNET.Controllers
         [Route("stats")]
         public ActionResult<ApiStats> GetStats()
         {
-            var playerCounts = _context.Players
-                .Select(p => new
-                {
-                    SanctionCount = p.Sanctions.Count()
-                })
-                .ToList();
+            var playerCount = _context.Players.AsNoTracking().Count();
+            var sanctionCount = _context.Sanctions.AsNoTracking().Count();
 
             return Ok(new ApiStats
             {
                 Success = true,
-                Players = playerCounts.Count,
-                Sanctions = playerCounts.Sum(c => c.SanctionCount)
+                Players = playerCount,
+                Sanctions = sanctionCount
             });
         }
 

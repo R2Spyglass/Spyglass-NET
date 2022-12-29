@@ -9,6 +9,7 @@ using IdentityServer4.EntityFramework.Options;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Serilog;
 using Spyglass.Core.Database;
 using Spyglass.Core.Services;
 using Spyglass.Identity;
@@ -74,6 +75,7 @@ namespace Spyglass.Core
             
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+            services.AddHttpContextAccessor();
             
             // Setup Spyglass' efcore database context.
             services.AddDbContext<SpyglassContext>(options =>
@@ -143,6 +145,7 @@ namespace Spyglass.Core
             // Authenticate and authorize using IdentityServer4.
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseSerilogRequestLogging();
 
             // Map controllers to their endpoints, and add a fallback for a not found page (or any other non-handled requests).
             app.MapControllers();
