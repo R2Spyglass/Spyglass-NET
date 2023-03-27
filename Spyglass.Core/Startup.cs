@@ -6,6 +6,7 @@ using IdentityModel.AspNetCore.OAuth2Introspection;
 using IdentityModel.Client;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Options;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -97,9 +98,10 @@ namespace Spyglass.Core
                 options.UseNpgsql(Configuration.GetConnectionString("IdentityServerContext")!);
             });
 
-            services.AddSingleton(Configuration);
-            services.AddSingleton<IdentityDiscoveryService>();
-            services.AddSingleton<MaintainerAuthenticationService>();
+            services.AddSingleton(Configuration)
+                .AddSingleton<IdentityDiscoveryService>()
+                .AddSingleton<MaintainerAuthenticationService>()
+                .AddSingleton<AuthenticatedRequestLogger>();
 
             // if (environment.IsProduction())
             // {
@@ -146,6 +148,13 @@ namespace Spyglass.Core
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseSerilogRequestLogging();
+            
+            // Override request remote ip address when forwarded.
+            app.UseForwardedHeaders(new ForwardedHeadersOptions()
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+                ForwardedForHeaderName = "CF-Connecting-IP"
+            });
 
             // Map controllers to their endpoints, and add a fallback for a not found page (or any other non-handled requests).
             app.MapControllers();
@@ -175,6 +184,10 @@ namespace Spyglass.Core
             {
                 context.Response.Headers.Add("Spyglass-API-Version", Configuration["SpyglassVersion"]);
                 context.Response.Headers.Add("Spyglass-API-MinimumVersion", Configuration["SpyglassMinimumVersion"]);
+
+                var requestLogger = app.Services.GetRequiredService<AuthenticatedRequestLogger>();
+                await requestLogger.OnRequestReceivedAsync(context);
+                
                 await next.Invoke();
             });
         }

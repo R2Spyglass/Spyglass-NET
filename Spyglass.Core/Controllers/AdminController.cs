@@ -1,12 +1,12 @@
-﻿using System.Security.Claims;
-using IdentityModel.Client;
+﻿using IdentityModel.Client;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
-using Serilog.Core;
+using Spyglass.Core.Database;
 using Spyglass.Core.Services;
 using Spyglass.Identity;
 using Spyglass.Models;
@@ -26,10 +26,11 @@ namespace SpyglassNET.Controllers
         private readonly IdentityDiscoveryService _discovery;
         private readonly MaintainerAuthenticationService _maintainerAuth;
         private readonly PersistedGrantDbContext _persistedGrant;
+        private readonly SpyglassContext _dbContext;
         private readonly ILogger _log;
 
         public AdminController(ConfigurationDbContext identityConfig, IHttpClientFactory httpFactory, IdentityDiscoveryService discovery, 
-            MaintainerAuthenticationService maintainerAuth, PersistedGrantDbContext persistedGrant)
+            MaintainerAuthenticationService maintainerAuth, PersistedGrantDbContext persistedGrant, SpyglassContext dbContext)
         {
             _identityConfig = identityConfig;
             _httpFactory = httpFactory;
@@ -37,6 +38,7 @@ namespace SpyglassNET.Controllers
             _maintainerAuth = maintainerAuth;
             _log = Log.Logger;
             _persistedGrant = persistedGrant;
+            _dbContext = dbContext;
         }
 
         /// <summary>
@@ -339,6 +341,51 @@ namespace SpyglassNET.Controllers
         public async Task<ApiResult> RemoveMaintainerIdentityAsync(string uniqueId)
         {
             return await _maintainerAuth.RemoveIdentityAsync(uniqueId);
+        }
+
+        /// <summary>
+        /// Lookup the given ip to see if it belongs to any authenticated client.
+        /// </summary>
+        /// <param name="ipAddress"> The ip address to lookup. </param>
+        /// <returns> An AuthenticatedIpResult containing matches for the given ip on success, or an error message. </returns>
+        [HttpGet]
+        [Route("lookup_authenticated_ip")]
+        public ActionResult<AuthenticatedIpResult> LookupAuthenticatedIp(string ipAddress)
+        {
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                return Ok(new AuthenticatedIpResult
+                {
+                    Success = false,
+                    Error = "Cannot lookup null or whitespace ip address."
+                });
+            }
+
+            ipAddress = ipAddress.Trim();
+
+            try
+            {
+                var matches = _dbContext.AuthenticatedRequests.AsNoTracking()
+                    .Where(a => EF.Functions.Like(a.IpAddress, ipAddress))
+                    .ToList();
+                
+                return Ok(new AuthenticatedIpResult
+                {
+                    Success = true,
+                    IpAddress = ipAddress,
+                    Matches = matches
+                });
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "An error has occurred for endpoint lookup_authenticated_ip");
+                return Ok(new AuthenticatedIpResult
+                {
+                    Success = false,
+                    Error = $"An error has occurred while looking up authenticated requests for ip: {ex.Message}",
+                    IpAddress = ipAddress
+                });
+            }
         }
     }
 }

@@ -31,6 +31,12 @@ namespace Spyglass.Core.Database
         /// </summary>
         public DbSet<MaintainerIdentity> MaintainerIdentities { get; set; } = null!;
 
+        /// <summary>
+        /// Table containing the ip address and date time of an authenticated request.
+        /// Will only hold the first time a specific client id/ip pair made an authenticated request.
+        /// </summary>
+        public DbSet<AuthenticatedRequestData> AuthenticatedRequests { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasSequence<int>("PlayerSanctionIds")
@@ -91,6 +97,16 @@ namespace Spyglass.Core.Database
             modelBuilder.Entity<MaintainerIdentity>(e =>
             {
                 e.HasKey(i => i.UniqueId);
+            });
+
+            modelBuilder.Entity<AuthenticatedRequestData>(e =>
+            {
+                e.HasKey(a => new {a.ClientId, a.IpAddress});
+                e.Property(a => a.RequestTime)
+                    .HasDefaultValueSql("now()");
+
+                e.Property(a => a.ServerName)
+                    .IsRequired(false);
             });
         }
     }
