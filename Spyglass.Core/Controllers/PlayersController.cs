@@ -111,7 +111,7 @@ namespace SpyglassNET.Controllers
                     || p.Aliases!.Any(a => a.Alias.ToLower().Contains(matchUsername)));
 
             var count = matches.Count();
-            if (count > 10)
+            if (count > 50)
             {
                 return Ok(new PlayerSearchResult
                 {
