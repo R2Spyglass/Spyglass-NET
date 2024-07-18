@@ -345,5 +345,28 @@ namespace SpyglassNET.Controllers
                 return Ok(ApiResult.FromError($"Failed to delete sanction with error: {ex.Message}"));
             }
         }
+
+        /// <summary>
+        /// Returns all the currently available sanctions from the database.
+        /// </summary>
+        /// <returns> The sanctions if the query was successful, else an error message. </returns>
+        [HttpGet("get_all_sanctions")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<SanctionResult> GetAllSanctions()
+        {
+            try
+            {
+                var sanctions = _context.Sanctions.OrderBy(s => s.Id).ToList();
+                return Ok(new SanctionResult
+                {
+                    Success = true,
+                    Sanctions = sanctions
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(ApiResult.FromError($"Failed to retrieve sanctions with error: {ex.Message}"));
+            }
+        }
     }
 }
